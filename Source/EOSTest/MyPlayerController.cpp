@@ -7,10 +7,5 @@
 
 void AMyPlayerController::OnNetCleanup(UNetConnection* Connection)
 {
-	UEOS_GameInstance* GameInstanceRef = Cast<UEOS_GameInstance>(GetGameInstance());
-	if(GameInstanceRef)
-	{
-		GameInstanceRef->DestroySession();
-	}
 	Super::OnNetCleanup(Connection);
 }

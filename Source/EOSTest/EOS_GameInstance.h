@@ -16,37 +16,36 @@ class EOSTEST_API UEOS_GameInstance : public UGameInstance
 	GENERATED_BODY()
 
 public:
+	UEOS_GameInstance();
+
+	virtual void Init() override;
+
+	virtual void Shutdown() override;
+
+	UFUNCTION(BlueprintCallable)
+	void Login();
+
+	UFUNCTION(BlueprintCallable)
+	void CreateSession();
+
+	UFUNCTION(BlueprintCallable)
+	void FindSession();
 	
-	UFUNCTION(BlueprintCallable, Category = "EOS Functions")
-	void LoginWithEOS(const FString& ID, const FString& Token, const FString& LoginType);
+	TSharedPtr<FOnlineSessionSearch> SearchSettings;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "EOS Functions")
-	FString GetPlayerUserName();
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "EOS Functions")
-	bool IsPlayerLoggedIn();
-
-	
-	UFUNCTION(BlueprintCallable, Category = "EOS Functions")
-	void CreateEOSSession(bool bIsDedicatedServer, bool bIsLanServer, int32 NumberOfPublicConnections);
-
-	UFUNCTION(BlueprintCallable, Category = "EOS Functions")
-	void FindSessionAndJoin();
-
-	UFUNCTION(BlueprintCallable, Category = "EOS Functions")
-	void JoinSession();
-
-	UFUNCTION(BlueprintCallable, Category = "EOS Functions")
+	UFUNCTION(BlueprintCallable)
 	void DestroySession();
 	
-	TSharedPtr<FOnlineSessionSearch> SessionSearch;
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnFindSessionComplete(bool bWasSuccessful);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnLoginComplete(int32 LocalUserNum,bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error);
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "EOS Variables")
-	FString OpenLevelText;
+protected:
+	TObjectPtr<class IOnlineSubsystem> OnlineSubsystem;
 
-	void LoginWithEOS_Return(int32 LocalUserNum, bool bWasSuccess, const FUniqueNetId& UserId, const FString& Error);
-	void OnCreateSessionCompleted(FName SessionName, bool bWasSuccessful);
-	void OnDestroySessionCompleted(FName SessionName, bool bWasSuccessful);
-	void OnFindSessionCompleted(bool bWasSuccess);
-	void OnJoinSessionCompleted(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	bool bIsLoggedIn;
 };
+
+	
