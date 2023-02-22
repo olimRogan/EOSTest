@@ -31,7 +31,7 @@ void UEOS_GameInstance::Login()
 {
 	if(OnlineSubsystem)
 	{
-		if(IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface())
+		if(const IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface())
 		{
 			FOnlineAccountCredentials Credentials;
 			Credentials.Id = FString();
@@ -50,7 +50,7 @@ void UEOS_GameInstance::CreateSession()
 	{
 		if(OnlineSubsystem)
 		{
-			if(IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+			if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 			{
 				FOnlineSessionSettings SessionSettings;
 				SessionSettings.bIsDedicated = false;
@@ -61,6 +61,7 @@ void UEOS_GameInstance::CreateSession()
 				SessionSettings.bAllowJoinViaPresence = true;
 				SessionSettings.bUsesPresence = true;
 				SessionSettings.bUseLobbiesIfAvailable = true;
+				SessionSettings.bAllowInvites = true;
 				
 				SessionSettings.Set(SEARCH_KEYWORDS,FString("Test Lobby"), EOnlineDataAdvertisementType::ViaOnlineService);
 
@@ -85,6 +86,7 @@ void UEOS_GameInstance::FindSession()
 			{
 				SearchSettings = MakeShareable(new FOnlineSessionSearch());
 				SearchSettings->MaxSearchResults = 5000;
+				SearchSettings->bIsLanQuery = false;
 				SearchSettings->QuerySettings.Set(SEARCH_KEYWORDS,FString("Test Lobby"),EOnlineComparisonOp::Equals);
 				SearchSettings->QuerySettings.Set(SEARCH_LOBBIES,true,EOnlineComparisonOp::Equals);
 				
@@ -101,7 +103,7 @@ void UEOS_GameInstance::DestroySession()
 	{
 		if(OnlineSubsystem)
 		{
-			if(IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+			if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 			{
 				SessionPtr->OnDestroySessionCompleteDelegates.AddUObject(this,&UEOS_GameInstance::OnDestroySessionComplete);
 				SessionPtr->DestroySession(TestSessionName);
@@ -116,7 +118,7 @@ void UEOS_GameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucc
 
 	if(OnlineSubsystem)
 	{
-		if(IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 		{
 			SessionPtr->ClearOnCreateSessionCompleteDelegates(this);
 			GetWorld()->ServerTravel(FString("MainSessionMap?listen"),false);
@@ -130,25 +132,19 @@ void UEOS_GameInstance::OnFindSessionComplete(bool bWasSuccessful)
 	if(bWasSuccessful)
 	{
 		UE_LOG(LogTemp,Error,TEXT("Found %d Lobbies"),SearchSettings->SearchResults.Num());
-
+		
 		if(OnlineSubsystem)
 		{
-			if(IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+			if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 			{
 				if(SearchSettings->SearchResults.Num())
 				{
 					SessionPtr->OnJoinSessionCompleteDelegates.AddUObject(this,&UEOS_GameInstance::OnJoinSessionComplete);
-					SessionPtr->JoinSession(0,TestSessionName,SearchSettings->SearchResults[0]);	
+					SessionPtr->JoinSession(0,TestSessionName,SearchSettings->SearchResults[0]);
+
+					SessionPtr->ClearOnFindSessionsCompleteDelegates(this);
 				}
 			}
-		}
-	}
-
-	if(OnlineSubsystem)
-	{
-		if(IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
-		{
-			SessionPtr->ClearOnFindSessionsCompleteDelegates(this);
 		}
 	}
 }
@@ -157,13 +153,12 @@ void UEOS_GameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionC
 {
 	if(OnlineSubsystem)
 	{
-		if(IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 		{
 			FString ConnectionInfo = FString();
 			SessionPtr->GetResolvedConnectString(SessionName, ConnectionInfo);
 			if(!ConnectionInfo.IsEmpty())
 			{
-				UE_LOG(LogTemp,Error,TEXT("==================================== Join Address is %s ===================================="),*ConnectionInfo);
 				if(APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(),0))
 				{
 					PC->ClientTravel(ConnectionInfo,ETravelType::TRAVEL_Absolute);
@@ -177,9 +172,14 @@ void UEOS_GameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuc
 {
 	if(OnlineSubsystem)
 	{
-		if(IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
+		if(const IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface())
 		{
 			SessionPtr->ClearOnDestroySessionCompleteDelegates(this);
+			if(APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(),0))
+			{
+				PC->ClientTravel("ThirdPersonMap",ETravelType::TRAVEL_Absolute);
+				SessionPtr->EndSession(TestSessionName);
+			}
 		}
 	}
 }
@@ -192,7 +192,7 @@ void UEOS_GameInstance::OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful,
 	
 	if(OnlineSubsystem)
 	{
-		if(IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface())
+		if(const IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface())
 		{
 			Identity->ClearOnLoginCompleteDelegates(0,this);
 		}
