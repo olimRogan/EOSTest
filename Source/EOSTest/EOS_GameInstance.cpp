@@ -36,7 +36,8 @@ void UEOS_GameInstance::Login()
 			FOnlineAccountCredentials Credentials;
 			Credentials.Id = FString();
 			Credentials.Token = FString();
-			Credentials.Type = FString("accountportal");
+			//Credentials.Type = FString("accountportal");
+			Credentials.Type = FString("persistentauth");
 
 			Identity->OnLoginCompleteDelegates->AddUObject(this,&UEOS_GameInstance::OnLoginComplete);
 			Identity->Login(0,Credentials);

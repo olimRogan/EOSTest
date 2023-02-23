@@ -45,6 +45,7 @@ public:
 protected:
 	TObjectPtr<class IOnlineSubsystem> OnlineSubsystem;
 
+	UPROPERTY(BlueprintReadOnly,Category="EOS")
 	bool bIsLoggedIn;
 };
 
